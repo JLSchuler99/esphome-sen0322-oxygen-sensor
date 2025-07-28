@@ -1,5 +1,6 @@
 #include "sen0322.h"
 #include "esphome/core/log.h"
+#include "esphome/core/hal.h"
 #include "esphome/core/helpers.h"
 
 namespace esphome {
@@ -22,7 +23,7 @@ void SEN0322Sensor::setup() {
     return;
   }
   
-  delay(100);
+  esphome::delay(100);
   ESP_LOGCONFIG(TAG, "SEN0322 setup complete");
 }
 
@@ -48,7 +49,7 @@ void SEN0322Sensor::update() {
   }
   
   // Wait for sensor to process
-  delay(50);
+  esphome::delay(50);
   
   // Read 3 bytes of data
   uint8_t data[3];
