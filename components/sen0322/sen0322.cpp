@@ -40,37 +40,36 @@ void SEN0322Sensor::dump_config() {
 
 void SEN0322Sensor::update() {
   ESP_LOGV(TAG, "Updating SEN0322 sensor...");
+  
   float total_oxygen = 0.0f;
-
   int valid_samples = 0;
-
-  const int samples = 10;
-
-  for (int i = 0; i < samples; i++){
+  const int samples = 10;  // Adjust as needed
+  
+  for (int i = 0; i < samples; i++) {
     // Send command to read oxygen concentration
     if (!this->write_byte(SEN0322_OXYGEN_DATA, 0x00)) {
       ESP_LOGE(TAG, "Failed to send oxygen data command");
       this->status_set_warning();
-      return;
+      continue;  // Skip this sample instead of returning
     }
     
     // Wait for sensor to process
     esphome::delay(50);
     
-    // Read 3 bytes of data
+    // Read 3 bytes of data (keep for compatibility, but parse only first 2)
     uint8_t data[3];
     if (!this->read_bytes_raw(data, 3)) {
       ESP_LOGE(TAG, "Failed to read oxygen data");
       this->status_set_warning();
-      return;
+      continue;  // Skip this sample
     }
-  
-    // Parse oxygen concentration with little-endian byte order
-    // SEN0322 uses reversed byte order: data[1] = high byte, data[0] = low byte
-    uint32_t raw_oxygen = (static_cast<uint32_t>(data[0]) << 16) |
-                          (static_cast<uint32_t>(data[1]) << 8) |
-                          data[2];
+    
+    // Parse with reversed byte order using only first 2 bytes
+    uint16_t raw_oxygen = (data[1] << 8) | data[0];
     float oxygen_concentration = raw_oxygen * 0.01f;
+    
+    // Optional: Log the third byte for debugging (remove if not needed)
+    ESP_LOGV(TAG, "Raw bytes: 0x%02X 0x%02X 0x%02X", data[0], data[1], data[2]);
     
     // Validate reading (oxygen should be between 0-30% for safety margin)
     if (oxygen_concentration >= 0.0f && oxygen_concentration <= 30.0f) {
@@ -79,15 +78,17 @@ void SEN0322Sensor::update() {
     } else {
       ESP_LOGW(TAG, "Invalid oxygen reading: %.2f%% (raw: 0x%04X)", oxygen_concentration, raw_oxygen);
     }
-    esphome::delay(100);
+    
+    esphome::delay(100);  // Inter-sample delay for stability
   }
-
+  
   if (valid_samples > 0) {
     float avg_oxygen = total_oxygen / valid_samples;
     ESP_LOGD(TAG, "Avg oxygen concentration: %.2f%%", avg_oxygen);
     this->publish_state(avg_oxygen);
     this->status_clear_warning();
   } else {
+    ESP_LOGE(TAG, "No valid samples collected");
     this->status_set_warning();
   }
 }
