@@ -46,7 +46,7 @@ void SEN0322Sensor::update() {
 
   const int samples = 10;
 
-  if (int i = 0; i < samples; i++){
+  for (int i = 0; i < samples; i++){
     // Send command to read oxygen concentration
     if (!this->write_byte(SEN0322_OXYGEN_DATA, 0x00)) {
       ESP_LOGE(TAG, "Failed to send oxygen data command");
