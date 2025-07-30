@@ -67,7 +67,7 @@ void SEN0322Sensor::update() {
     
   }
 
-  float oxygen = key * (data[0] + data[1] / 10.0f + data[2] / 100.0f);
+  oxygen = key * (data[0] + data[1] / 10.0f + data[2] / 100.0f);
   ESP_LOGV(TAG, "Raw bytes: [%d, %d, %d] → %.2f%%", data[0], data[1], data[2], oxygen);
 
   if (oxygen >= 0.0f && oxygen <= 30.0f) {
