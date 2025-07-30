@@ -41,13 +41,13 @@ void SEN0322Sensor::update() {
 
   esphome::delay(50);
 
-  uint8_t key_byte;
-  if (!this->read_byte(&key_byte)) {
+  auto key_result = this->read_byte(REG_KEY);
+  if (!key_result.has_value()) {
     ESP_LOGE(TAG, "Failed to read calibration key");
     this->status_set_warning();
     return;
   }
-
+  uint8_t key_byte = key_result.value();
   float key = (key_byte == 0) ? (20.9f / 120.0f) : (key_byte / 1000.0f);
   ESP_LOGD(TAG, "Calibration key: 0x%02X → %.5f", key_byte, key);
 
