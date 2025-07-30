@@ -51,16 +51,12 @@ void SEN0322Sensor::update() {
   float key = (key_byte == 0) ? (20.9f / 120.0f) : (key_byte / 1000.0f);
   key = 20.9f / 120.0f;
   ESP_LOGD(TAG, "Calibration key: 0x%02X → %.5f", key_byte, key);
-
-  // Step 2: Read and process multiple oxygen samples
-  const int samples = 3;
-  float total_oxygen = 0.0f;
-  int valid_samples = 0;
+  
+  float oxygen = 0.0f;;
 
   // Request data
   if (!this->write_byte(REG_OXYGEN_DATA, 0x00)) {
     ESP_LOGE(TAG, "Failed to send oxygen data request");
-    continue;
   }
 
   esphome::delay(100);  // Wait for sensor to prepare data
@@ -68,7 +64,7 @@ void SEN0322Sensor::update() {
   uint8_t data[3];
   if (!this->read_bytes_raw(data, 3)) {
     ESP_LOGE(TAG, "Failed to read oxygen data");
-    continue;
+    
   }
 
   float oxygen = key * (data[0] + data[1] / 10.0f + data[2] / 100.0f);
