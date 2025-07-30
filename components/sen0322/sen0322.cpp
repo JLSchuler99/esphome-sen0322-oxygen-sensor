@@ -43,7 +43,7 @@ void SEN0322Sensor::update() {
   
   float total_oxygen = 0.0f;
   int valid_samples = 0;
-  const int samples = 10;  // Adjust as needed
+  const int samples = 3;  // Adjust as needed
   
   for (int i = 0; i < samples; i++) {
     // Send command to read oxygen concentration
@@ -54,7 +54,7 @@ void SEN0322Sensor::update() {
     }
     
     // Wait for sensor to process
-    esphome::delay(50);
+    esphome::delay(50000);
     
     // Read 3 bytes of data (keep for compatibility, but parse only first 2)
     uint8_t data[3];
@@ -79,7 +79,7 @@ void SEN0322Sensor::update() {
       ESP_LOGW(TAG, "Invalid oxygen reading: %.2f%% (raw: 0x%04X)", oxygen_concentration, raw_oxygen);
     }
     
-    esphome::delay(100);  // Inter-sample delay for stability
+    esphome::delay(15000);  // Inter-sample delay for stability
   }
   
   if (valid_samples > 0) {
