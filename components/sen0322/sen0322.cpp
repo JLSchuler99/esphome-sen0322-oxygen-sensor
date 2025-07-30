@@ -8,22 +8,13 @@ namespace sen0322 {
 
 static const char *const TAG = "sen0322";
 
-// Register commands according to datasheet
-static const uint8_t SEN0322_COLLECT_PHASE = 0x01;
-static const uint8_t SEN0322_JUDGE_PHASE = 0x02;
-static const uint8_t SEN0322_OXYGEN_DATA = 0x03;
+// Official register addresses
+static const uint8_t REG_OXYGEN_DATA = 0x03;
+static const uint8_t REG_KEY = 0x05;
 
 void SEN0322Sensor::setup() {
   ESP_LOGCONFIG(TAG, "Setting up SEN0322...");
-  
-  // Initialize sensor
-  if (!this->write_byte(SEN0322_COLLECT_PHASE, 0x00)) {
-    ESP_LOGE(TAG, "Failed to initialize sensor");
-    this->mark_failed();
-    return;
-  }
-  
-  esphome::delay(100);
+  // No need to send collect/judge phase based on DFRobot reference
   ESP_LOGCONFIG(TAG, "SEN0322 setup complete");
 }
 
@@ -40,48 +31,59 @@ void SEN0322Sensor::dump_config() {
 
 void SEN0322Sensor::update() {
   ESP_LOGV(TAG, "Updating SEN0322 sensor...");
-  
+
+  // Step 1: Read calibration key from flash (register 0x05)
+  if (!this->write_byte(REG_KEY, 0x00)) {
+    ESP_LOGE(TAG, "Failed to request calibration key");
+    this->status_set_warning();
+    return;
+  }
+
+  esphome::delay(50);
+
+  uint8_t key_byte;
+  if (!this->read_byte(&key_byte)) {
+    ESP_LOGE(TAG, "Failed to read calibration key");
+    this->status_set_warning();
+    return;
+  }
+
+  float key = (key_byte == 0) ? (20.9f / 120.0f) : (key_byte / 1000.0f);
+  ESP_LOGD(TAG, "Calibration key: 0x%02X → %.5f", key_byte, key);
+
+  // Step 2: Read and process multiple oxygen samples
+  const int samples = 3;
   float total_oxygen = 0.0f;
   int valid_samples = 0;
-  const int samples = 3;  // Adjust as needed
-  
+
   for (int i = 0; i < samples; i++) {
-    // Send command to read oxygen concentration
-    if (!this->write_byte(SEN0322_OXYGEN_DATA, 0x00)) {
-      ESP_LOGE(TAG, "Failed to send oxygen data command");
-      this->status_set_warning();
-      continue;  // Skip this sample instead of returning
+    // Request data
+    if (!this->write_byte(REG_OXYGEN_DATA, 0x00)) {
+      ESP_LOGE(TAG, "Failed to send oxygen data request");
+      continue;
     }
-    
-    // Wait for sensor to process
-    esphome::delay(50);
-    
-    // Read 3 bytes of data (keep for compatibility, but parse only first 2)
+
+    esphome::delay(100);  // Wait for sensor to prepare data
+
     uint8_t data[3];
     if (!this->read_bytes_raw(data, 3)) {
       ESP_LOGE(TAG, "Failed to read oxygen data");
-      this->status_set_warning();
-      continue;  // Skip this sample
+      continue;
     }
-    
-    // Parse with reversed byte order using only first 2 bytes
-    uint16_t raw_oxygen = (data[0] << 8) | data[1];
-    float oxygen_concentration = raw_oxygen * 0.01f;
-    
-    // Optional: Log the third byte for debugging (remove if not needed)
-    ESP_LOGV(TAG, "Raw bytes: 0x%02X 0x%02X 0x%02X", data[0], data[1], data[2]);
-    
-    // Validate reading (oxygen should be between 0-30% for safety margin)
-    if (oxygen_concentration >= 0.0f && oxygen_concentration <= 30.0f) {
-      total_oxygen += oxygen_concentration;
+
+    float oxygen = key * (data[0] + data[1] / 10.0f + data[2] / 100.0f);
+    ESP_LOGV(TAG, "Raw bytes: [%d, %d, %d] → %.2f%%", data[0], data[1], data[2], oxygen);
+
+    if (oxygen >= 0.0f && oxygen <= 30.0f) {
+      total_oxygen += oxygen;
       valid_samples++;
     } else {
-      ESP_LOGW(TAG, "Invalid oxygen reading: %.2f%% (raw: 0x%04X)", oxygen_concentration, raw_oxygen);
+      ESP_LOGW(TAG, "Discarded invalid reading: %.2f%%", oxygen);
     }
-    
-    esphome::delay(100);  // Inter-sample delay for stability
+
+    esphome::delay(100);  // Optional short delay between samples
   }
-  
+
   if (valid_samples > 0) {
     float avg_oxygen = total_oxygen / valid_samples;
     ESP_LOGD(TAG, "Avg oxygen concentration: %.2f%%", avg_oxygen);
