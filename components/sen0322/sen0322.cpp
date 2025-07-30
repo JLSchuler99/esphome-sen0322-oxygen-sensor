@@ -50,6 +50,7 @@ void SEN0322Sensor::update() {
   uint8_t key_byte = key_result.value();
   float key = (key_byte == 0) ? (20.9f / 120.0f) : (key_byte / 1000.0f);
   key = 20.9f / 120.0f;
+  key = 0.18463f;
   ESP_LOGD(TAG, "Calibration key: 0x%02X → %.5f", key_byte, key);
   
   float oxygen = 0.0f;;
