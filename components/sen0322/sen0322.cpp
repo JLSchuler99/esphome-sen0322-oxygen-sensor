@@ -57,41 +57,28 @@ void SEN0322Sensor::update() {
   float total_oxygen = 0.0f;
   int valid_samples = 0;
 
-  for (int i = 0; i < samples; i++) {
-    // Request data
-    if (!this->write_byte(REG_OXYGEN_DATA, 0x00)) {
-      ESP_LOGE(TAG, "Failed to send oxygen data request");
-      continue;
-    }
-
-    esphome::delay(100);  // Wait for sensor to prepare data
-
-    uint8_t data[3];
-    if (!this->read_bytes_raw(data, 3)) {
-      ESP_LOGE(TAG, "Failed to read oxygen data");
-      continue;
-    }
-
-    float oxygen = key * (data[0] + data[1] / 10.0f + data[2] / 100.0f);
-    ESP_LOGV(TAG, "Raw bytes: [%d, %d, %d] → %.2f%%", data[0], data[1], data[2], oxygen);
-
-    if (oxygen >= 0.0f && oxygen <= 30.0f) {
-      total_oxygen += oxygen;
-      valid_samples++;
-    } else {
-      ESP_LOGW(TAG, "Discarded invalid reading: %.2f%%", oxygen);
-    }
-
-    esphome::delay(100);  // Optional short delay between samples
+  // Request data
+  if (!this->write_byte(REG_OXYGEN_DATA, 0x00)) {
+    ESP_LOGE(TAG, "Failed to send oxygen data request");
+    continue;
   }
 
-  if (valid_samples > 0) {
-    float avg_oxygen = total_oxygen / valid_samples;
-    ESP_LOGD(TAG, "Avg oxygen concentration: %.2f%%", avg_oxygen);
-    this->publish_state(avg_oxygen);
+  esphome::delay(100);  // Wait for sensor to prepare data
+
+  uint8_t data[3];
+  if (!this->read_bytes_raw(data, 3)) {
+    ESP_LOGE(TAG, "Failed to read oxygen data");
+    continue;
+  }
+
+  float oxygen = key * (data[0] + data[1] / 10.0f + data[2] / 100.0f);
+  ESP_LOGV(TAG, "Raw bytes: [%d, %d, %d] → %.2f%%", data[0], data[1], data[2], oxygen);
+
+  if (oxygen >= 0.0f && oxygen <= 30.0f) {
+    this->publish_state(oxygen);
     this->status_clear_warning();
   } else {
-    ESP_LOGE(TAG, "No valid samples collected");
+    ESP_LOGW(TAG, "Discarded invalid reading: %.2f%%", oxygen);
     this->status_set_warning();
   }
 }
