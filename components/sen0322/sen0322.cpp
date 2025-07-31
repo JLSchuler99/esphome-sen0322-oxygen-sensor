@@ -39,7 +39,7 @@ void SEN0322Sensor::update() {
     return;
   }
 
-  esphome::delay(50);
+  esphome::delay(25);
 
   auto key_result = this->read_byte(REG_KEY);
   if (!key_result.has_value()) {
@@ -60,7 +60,7 @@ void SEN0322Sensor::update() {
     ESP_LOGE(TAG, "Failed to send oxygen data request");
   }
 
-  esphome::delay(100);  // Wait for sensor to prepare data
+  esphome::delay(75);  // Wait for sensor to prepare data
 
   uint8_t data[3];
   if (!this->read_bytes_raw(data, 3)) {
