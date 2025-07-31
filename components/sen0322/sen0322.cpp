@@ -60,7 +60,7 @@ void SEN0322Sensor::update() {
     ESP_LOGE(TAG, "Failed to send oxygen data request");
   }
 
-  //esphome::delay(100);  // Wait for sensor to prepare data
+  esphome::delay(100);  // Wait for sensor to prepare data
 
   uint8_t data[3];
   if (!this->read_bytes_raw(data, 3)) {
