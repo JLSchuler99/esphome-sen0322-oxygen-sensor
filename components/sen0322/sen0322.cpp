@@ -71,7 +71,7 @@ void SEN0322Sensor::update() {
   oxygen = key * (data[0] + data[1] / 10.0f + data[2] / 100.0f);
   ESP_LOGV(TAG, "Raw bytes: [%d, %d, %d] → %.2f%%", data[0], data[1], data[2], oxygen);
 
-  float alpha = 0.3f // Tune between 0.1 (slow) and 0.5 (fast)
+  float alpha = 0.3f; // Tune between 0.1 (slow) and 0.5 (fast)
 
   if (std::isnan(ema_oxygen_)) {
     ema_oxygen_ = oxygen;
