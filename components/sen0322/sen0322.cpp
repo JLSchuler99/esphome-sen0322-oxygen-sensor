@@ -33,24 +33,24 @@ void SEN0322Sensor::update() {
   ESP_LOGV(TAG, "Updating SEN0322 sensor...");
 
   // Step 1: Read calibration key from flash (register 0x05)
-  if (!this->write_byte(REG_KEY, 0x00)) {
-    ESP_LOGE(TAG, "Failed to request calibration key");
-    this->status_set_warning();
-    return;
-  }
+  //if (!this->write_byte(REG_KEY, 0x00)) {
+  //  ESP_LOGE(TAG, "Failed to request calibration key");
+  //  this->status_set_warning();
+  //  return;
+  //}
 
-  esphome::delay(100);
+  //esphome::delay(100);
 
-  auto key_result = this->read_byte(REG_KEY);
-  if (!key_result.has_value()) {
-    ESP_LOGE(TAG, "Failed to read calibration key");
-    this->status_set_warning();
-    return;
-  }
-  uint8_t key_byte = key_result.value();
-  float key = (key_byte == 0) ? (20.9f / 120.0f) : (key_byte / 1000.0f);
-  key = 20.9f / 120.0f;
-  key = 0.18463f;
+  //auto key_result = this->read_byte(REG_KEY);
+  //if (!key_result.has_value()) {
+  //  ESP_LOGE(TAG, "Failed to read calibration key");
+  //  this->status_set_warning();
+  //  return;
+  //}
+  //uint8_t key_byte = key_result.value();
+  //float key = (key_byte == 0) ? (20.9f / 120.0f) : (key_byte / 1000.0f);
+  //key = 20.9f / 120.0f;
+  float key = 0.18463f;
   ESP_LOGD(TAG, "Calibration key: 0x%02X → %.5f", key_byte, key);
   
   float oxygen = 0.0f;;
@@ -60,7 +60,7 @@ void SEN0322Sensor::update() {
     ESP_LOGE(TAG, "Failed to send oxygen data request");
   }
 
-  esphome::delay(100);  // Wait for sensor to prepare data
+  //esphome::delay(100);  // Wait for sensor to prepare data
 
   uint8_t data[3];
   if (!this->read_bytes_raw(data, 3)) {
