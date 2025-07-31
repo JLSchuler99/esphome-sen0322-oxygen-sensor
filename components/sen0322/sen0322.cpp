@@ -72,11 +72,13 @@ void SEN0322Sensor::update() {
   ESP_LOGV(TAG, "Raw bytes: [%d, %d, %d] → %.2f%%", data[0], data[1], data[2], oxygen);
 
   float alpha = 0.3f; // Tune between 0.1 (slow) and 0.5 (fast)
+  float ema_oxygen_
 
   if (std::isnan(ema_oxygen_)) {
     ema_oxygen_ = oxygen;
   } else {
     ema_oxygen_ = alpha * oxygen + (1 - alpha) * ema_oxygen_;
+  }
 
   if (oxygen >= 0.0f && oxygen <= 30.0f) {
     this->publish_state(oxygen);
